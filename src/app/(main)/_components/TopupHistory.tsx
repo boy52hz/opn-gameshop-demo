@@ -7,18 +7,19 @@ import {
   cn,
   Chip
 } from '@nextui-org/react'
-import { OrderStatus, User } from '@prisma/client'
+import { OrderStatus } from '@prisma/client'
 import moment from 'moment'
 import Coin from '@/src/assets/svgs/coin.svg'
+import { auth } from '@/src/libs/auth'
 
-type Props = {
-  user: User
-}
+export default async function TopupHistory() {
+  const session = await auth()
 
-export default async function TopupHistory({ user }: Props) {
+  if (!session?.user) return null
+
   const orders = await prisma.order.findMany({
     where: {
-      userId: user.id
+      userId: session.user.id
     },
     orderBy: {
       createdAt: 'desc'

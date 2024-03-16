@@ -8,5 +8,17 @@ export const {
   auth
 } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  providers: [Google]
+  providers: [Google],
+  callbacks: {
+    jwt({ token, trigger, session }) {
+      if (trigger === 'update' && session.points) {
+        token.points = session.points
+        console.log('Updated token with points', token.points)
+      }
+      return token
+    },
+    async session({ session }) {
+      return session
+    }
+  }
 })

@@ -1,7 +1,8 @@
-import { auth } from '@/src/libs/auth'
 import TopupHistory from './_components/TopupHistory'
 import ProfileCard from './_components/ProfileCard'
 import { Card, CardHeader } from '@nextui-org/react'
+import { auth } from '@/src/libs/auth'
+import SignInCard from './_components/SignInCard'
 
 type Props = {
   children: React.ReactNode
@@ -18,8 +19,9 @@ export default async function MainLayout({ children }: Props) {
       </Card>
       <div className="flex gap-10">
         <div className="flex-[2] flex flex-col gap-4">
-          <ProfileCard user={session?.user} />
-          {session?.user && <TopupHistory user={session.user} />}
+          {session?.user ? <ProfileCard /> : <SignInCard />}
+
+          <TopupHistory />
         </div>
         <div className="flex-[5]">{children}</div>
       </div>

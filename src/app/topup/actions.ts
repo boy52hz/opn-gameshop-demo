@@ -4,7 +4,6 @@ import { auth } from '@/src/libs/auth'
 import { omise } from '@/src/libs/omise'
 import { prisma } from '@/src/libs/prisma-client'
 import { Order, OrderStatus } from '@prisma/client'
-import { revalidatePath } from 'next/cache'
 
 export const createOrder = async ({
   nounce,
@@ -57,7 +56,7 @@ export const createOrder = async ({
       newCharge.paid,
       newCharge.metadata.orderId
     )
-    revalidatePath('/')
+
     return {
       success: true,
       message: 'Order has been created'

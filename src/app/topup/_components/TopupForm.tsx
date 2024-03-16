@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import ToastError from '@/src/components/ToastError'
 import Coin from '@/src/assets/svgs/coin.svg'
+import { useSession } from 'next-auth/react'
 
 const validationSchema = yup.object().shape({
   points: yup
@@ -32,6 +33,7 @@ type Props = {
 }
 
 export default function TopupForm({ currentPoints }: Props) {
+  const { update } = useSession()
   const router = useRouter()
   const {
     register,
@@ -59,7 +61,7 @@ export default function TopupForm({ currentPoints }: Props) {
 
     if (!nounce) return
 
-    toast.promise(
+    await toast.promise(
       createOrder({
         nounce,
         currency,
@@ -76,7 +78,7 @@ export default function TopupForm({ currentPoints }: Props) {
         }
       }
     )
-
+    await update()
     router.replace('/')
   })
 
@@ -107,13 +109,13 @@ export default function TopupForm({ currentPoints }: Props) {
           <Button
             className="w-full"
             variant="flat"
-            color={isSubmitSuccessful ? 'success' : 'primary'}
+            color="primary"
             type="submit"
             isLoading={isSubmitting}
             disabled={isSubmitting || isSubmitSuccessful}
             disableAnimation={false}
           >
-            {isSubmitSuccessful ? 'Success' : 'Pay Now'}
+            Pay now
           </Button>
         </CardFooter>
       </Card>

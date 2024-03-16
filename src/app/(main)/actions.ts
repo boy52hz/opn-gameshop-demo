@@ -2,7 +2,6 @@
 
 import { auth } from '@/src/libs/auth'
 import { prisma } from '@/src/libs/prisma-client'
-import { revalidatePath } from 'next/cache'
 
 export const purchaseProduct = async (productId: string) => {
   const session = await auth()
@@ -12,7 +11,7 @@ export const purchaseProduct = async (productId: string) => {
       id: session?.user.id
     }
   })
-  console.log(productId, user.id, user.points)
+
   if (!user) {
     throw new Error('User not found')
   }
@@ -32,7 +31,7 @@ export const purchaseProduct = async (productId: string) => {
   }
 
   try {
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: {
         id: user.id
       },
@@ -42,10 +41,11 @@ export const purchaseProduct = async (productId: string) => {
         }
       }
     })
-    revalidatePath('/')
+
     return {
       success: true,
-      message: 'Product has been purchased'
+      message: 'Product has been purchased',
+      remainingPoints: updatedUser.points
     }
   } catch (error) {
     throw new Error('Failed to update user points')
