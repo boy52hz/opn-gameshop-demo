@@ -5,6 +5,7 @@ import { Charges } from 'omise'
 
 export const handleChargeComplete = async (charge: Charges.ICharge) => {
   const status = (charge as any).status as IChargeStatus
+  if (!charge.metadata?.orderId) throw new Error('Order ID not found')
   if (status === 'successful') {
     await prisma.$transaction(async (tx) => {
       const updatedOrder = await tx.order.update({
