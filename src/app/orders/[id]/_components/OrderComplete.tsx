@@ -14,6 +14,7 @@ import Link from 'next/link'
 import Coin from '@/src/assets/svgs/coin.svg'
 import moment from 'moment'
 import { currencyUtil } from '@/src/uilts/currency'
+import PointsChip from '@/src/components/PointsChip'
 
 type Props = {
   order: Order
@@ -46,9 +47,7 @@ export default function OrderComplete({ order, charge }: Props) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="font-semibold text-sm">Received points</div>
-            <Chip color="warning" variant="flat" startContent={<Coin />}>
-              {currencyUtil.format(order.points)}
-            </Chip>
+            <PointsChip points={order.points} />
           </div>
 
           <div className="flex items-center justify-between">

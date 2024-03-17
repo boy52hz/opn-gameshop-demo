@@ -11,14 +11,14 @@ type Props = {
 export default async function MainLayout({ children }: Props) {
   const session = await auth()
   return (
-    <main className="container mx-auto h-dvh space-y-4 py-4">
-      <Card>
+    <main className="relative container mx-auto min-h-dvh space-y-4 p-5">
+      <Card className="hidden lg:block">
         <CardHeader>
           <h1 className="text-large">OPN Demo - Game shop</h1>
         </CardHeader>
       </Card>
-      <div className="flex gap-10">
-        <div className="flex-[2] flex flex-col gap-4">
+      <div className="flex flex-col lg:flex-row gap-10">
+        <div className="flex flex-[2] flex-col gap-4 sticky top-0 z-10 lg:static">
           {session?.user ? <ProfileCard /> : <SignInCard />}
           <TopupHistory />
         </div>

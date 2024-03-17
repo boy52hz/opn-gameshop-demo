@@ -3,17 +3,14 @@ import {
   CardHeader,
   Avatar,
   Button,
-  Chip,
   Divider,
   CardBody
 } from '@nextui-org/react'
 import Link from 'next/link'
 import React from 'react'
-import Coin from '@/src/assets/svgs/coin.svg'
 import SignOutBtn from './SignOutBtn'
-import { User } from '@prisma/client'
 import { auth } from '@/src/libs/auth'
-import { currencyUtil } from '@/src/uilts/currency'
+import PointsChip from '@/src/components/PointsChip'
 
 export default async function ProfileCard() {
   const session = await auth()
@@ -38,9 +35,7 @@ export default async function ProfileCard() {
       <Divider />
       <CardBody>
         <div className="flex items-center justify-between">
-          <Chip color="warning" variant="flat" startContent={<Coin />}>
-            {currencyUtil.format(user.points)}
-          </Chip>
+          <PointsChip points={user.points} />
           <Link href="/topup">
             <Button color="primary" size="sm" variant="flat">
               Get Points
