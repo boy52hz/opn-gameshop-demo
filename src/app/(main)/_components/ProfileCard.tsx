@@ -1,5 +1,3 @@
-'use client'
-
 import {
   Card,
   CardHeader,
@@ -7,48 +5,41 @@ import {
   Button,
   Chip,
   Divider,
-  CardBody,
-  Skeleton
+  CardBody
 } from '@nextui-org/react'
 import Link from 'next/link'
 import React from 'react'
 import Coin from '@/src/assets/svgs/coin.svg'
 import SignOutBtn from './SignOutBtn'
-import { useSession } from 'next-auth/react'
+import { User } from '@prisma/client'
+import { auth } from '@/src/libs/auth'
+import { currencyUtil } from '@/src/uilts/currency'
 
-export default function ProfileCard() {
-  const { data: session } = useSession()
+export default async function ProfileCard() {
+  const session = await auth()
+  const user = session?.user
+
+  if (!user) return null
+
   return (
     <Card className="w-full">
       <CardHeader className="flex gap-3">
-        {session?.user ? (
-          <div className="flex justify-between w-full">
-            <div className="flex gap-3 items-center">
-              {session.user.image && <Avatar src={session.user.image} />}
-              <div className="flex flex-col">
-                <p className="text-md">{session.user.name}</p>
-                <p className="text-xs text-default-500">{session.user.email}</p>
-              </div>
-            </div>
-            <SignOutBtn />
-          </div>
-        ) : (
-          <div className="max-w-[300px] w-full flex items-center gap-3">
-            <div>
-              <Skeleton className="flex rounded-full w-12 h-12" />
-            </div>
-            <div className="w-full flex flex-col gap-2">
-              <Skeleton className="h-3 w-3/5 rounded-lg" />
-              <Skeleton className="h-3 w-4/5 rounded-lg" />
+        <div className="flex justify-between w-full">
+          <div className="flex gap-3 items-center">
+            {user.image && <Avatar src={user.image} />}
+            <div className="flex flex-col">
+              <p className="text-md">{user.name}</p>
+              <p className="text-xs text-default-500">{user.email}</p>
             </div>
           </div>
-        )}
+          <SignOutBtn />
+        </div>
       </CardHeader>
       <Divider />
       <CardBody>
         <div className="flex items-center justify-between">
           <Chip color="warning" variant="flat" startContent={<Coin />}>
-            {session?.user.points.toLocaleString('th-TH') || 0}
+            {currencyUtil.format(user.points)}
           </Chip>
           <Link href="/topup">
             <Button color="primary" size="sm" variant="flat">

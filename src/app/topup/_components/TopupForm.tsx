@@ -14,33 +14,38 @@ import * as yup from 'yup'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { createOrder } from '../actions'
-import { useRouter } from 'next/navigation'
-import { toast } from 'react-toastify'
-import ToastError from '@/src/components/ToastError'
 import Coin from '@/src/assets/svgs/coin.svg'
-import { useSession } from 'next-auth/react'
+import { MAX_TOPUP_AMOUNT, MIN_TOPUP_AMOUNT } from '@/src/constants/topup'
+import { toast } from 'react-toastify'
+import { currencyUtil } from '@/src/uilts/currency'
 
-const validationSchema = yup.object().shape({
-  points: yup
-    .number()
-    .required('Please enter the points you want to topup')
-    .positive('Please enter a positive number')
-    .integer('Please enter a whole number')
-})
+const validationSchema = yup
+  .object()
+  .shape({
+    points: yup
+      .number()
+      .typeError('Please enter a number')
+      .required('Please enter the points you want to topup')
+      .positive('Please enter a positive number')
+      .integer('Please enter a whole number')
+      .min(MIN_TOPUP_AMOUNT, `Minimum topup is ${MIN_TOPUP_AMOUNT} points`)
+      .max(MAX_TOPUP_AMOUNT, `Maximum topup is ${MAX_TOPUP_AMOUNT} points`)
+  })
+  .required()
 
 type Props = {
   currentPoints: number
 }
 
 export default function TopupForm({ currentPoints }: Props) {
-  const { update } = useSession()
-  const router = useRouter()
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting, isSubmitSuccessful }
+    reset,
+    formState: { errors, isSubmitting, isSubmitSuccessful }
   } = useForm({
-    resolver: yupResolver(validationSchema)
+    resolver: yupResolver(validationSchema),
+    mode: 'onChange'
   })
 
   const onSubmit = handleSubmit(async (data) => {
@@ -55,31 +60,22 @@ export default function TopupForm({ currentPoints }: Props) {
       OmiseCard.open({
         amount,
         currency,
-        onCreateTokenSuccess: resolve
+        //@ts-ignore
+        otherPaymentMethods: ['truemoney', 'promptpay'],
+        onCreateTokenSuccess: resolve,
+        onFormClosed: reset
       })
     })
 
-    if (!nounce) return
+    const res = await createOrder({
+      amount,
+      currency,
+      nounce
+    })
 
-    await toast.promise(
-      createOrder({
-        nounce,
-        currency,
-        amount
-      }),
-      {
-        pending: 'Creating order...',
-        success: {
-          render: ({ data }) => data.message
-        },
-        error: {
-          render: ({ data: error }) =>
-            error instanceof Error && <ToastError message={error.message} />
-        }
-      }
-    )
-    await update()
-    router.replace('/')
+    if (res && res.success) {
+      toast.error(res.message)
+    }
   })
 
   return (
@@ -91,17 +87,20 @@ export default function TopupForm({ currentPoints }: Props) {
         <CardHeader className="flex items-center justify-between">
           <h1>Points Topup</h1>
           <Chip color="warning" variant="flat" startContent={<Coin />}>
-            {currentPoints.toLocaleString('th-TH')}
+            {currencyUtil.format(currentPoints)}
           </Chip>
         </CardHeader>
         <Divider />
         <CardBody>
           <Input
             {...register('points')}
-            type="number"
             label="Points to topup"
+            disabled={isSubmitting}
+            errorMessage={errors.points?.message}
+            isInvalid={!!errors.points}
+            color={errors.points && 'danger'}
             isRequired
-            isReadOnly={isSubmitting}
+            description={`You can topup between ${MIN_TOPUP_AMOUNT} and ${MAX_TOPUP_AMOUNT} points.`}
           />
         </CardBody>
         <Divider />
@@ -112,10 +111,9 @@ export default function TopupForm({ currentPoints }: Props) {
             color="primary"
             type="submit"
             isLoading={isSubmitting}
-            disabled={isSubmitting || isSubmitSuccessful}
-            disableAnimation={false}
+            isDisabled={isSubmitting || isSubmitSuccessful}
           >
-            Pay now
+            {isSubmitting ? 'Processing...' : 'Pay now'}
           </Button>
         </CardFooter>
       </Card>

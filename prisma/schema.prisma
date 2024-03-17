@@ -79,10 +79,11 @@ enum OrderStatus {
 }
 
 model Order {
-  id        String      @id @default(cuid())
-  userId    String
-  points    Int
-  status    OrderStatus @default(PENDING)
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime    @default(now())
+  id            String      @id @default(cuid())
+  userId        String
+  points        Int
+  omiseChargeId String?     @unique
+  status        OrderStatus @default(PENDING)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
 }

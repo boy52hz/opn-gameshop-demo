@@ -1,9 +1,15 @@
 'use server'
 
+import { MAX_TOPUP_AMOUNT, MIN_TOPUP_AMOUNT } from '@/src/constants/topup'
 import { auth } from '@/src/libs/auth'
 import { omise } from '@/src/libs/omise'
 import { prisma } from '@/src/libs/prisma-client'
-import { Order, OrderStatus } from '@prisma/client'
+import { currencyUtil } from '@/src/uilts/currency'
+import { OrderStatus } from '@prisma/client'
+import moment from 'moment'
+import { customAlphabet } from 'nanoid'
+import { redirect } from 'next/navigation'
+import { Charges } from 'omise'
 
 export const createOrder = async ({
   nounce,
@@ -17,59 +23,85 @@ export const createOrder = async ({
   const session = await auth()
 
   if (!session?.user?.id) {
-    throw new Error('User not found')
+    return {
+      success: false,
+      message: 'Unauthorized user'
+    }
+  }
+  const zeroDecimalAmount = currencyUtil.toZeroDecimalAmount(amount)
+  if (
+    zeroDecimalAmount < MIN_TOPUP_AMOUNT ||
+    zeroDecimalAmount > MAX_TOPUP_AMOUNT
+  ) {
+    return {
+      success: false,
+      message: 'Invalid amount'
+    }
   }
 
-  let newOrder: Order | null = null
-
-  try {
-    newOrder = await prisma.order.create({
-      data: {
-        userId: session.user.id,
-        points: amount / 100
-      }
-    })
-  } catch (error) {
-    throw new Error('Order failed to create')
+  let chargeConfig: Charges.IRequest = {
+    amount,
+    currency
   }
-
-  let config = {}
 
   if (nounce.startsWith('tokn_')) {
-    config = { card: nounce }
+    chargeConfig.card = nounce
   } else {
-    config = { source: nounce }
+    chargeConfig.source = nounce
   }
 
-  try {
-    const newCharge = await omise.charges.create({
-      amount,
-      currency,
-      metadata: {
-        orderId: newOrder.id
-      },
-      ...config
-    })
-    console.log(
-      'Charge created',
-      newCharge.id,
-      newCharge.paid,
-      newCharge.metadata.orderId
-    )
+  const [newOrder, newCharge] = await prisma.$transaction(async (tx) => {
+    const nanoid = customAlphabet('1234567890abcdef', 10)
+    const orderId = `ORDER-${moment().format('YYYYMMDD')}-${nanoid()}`
 
-    return {
-      success: true,
-      message: 'Order has been created'
+    let newCharge: Charges.ICharge
+
+    try {
+      newCharge = await omise.charges.create({
+        ...chargeConfig,
+        return_uri: `https://${process.env.HOST}/orders/${orderId}`,
+        metadata: {
+          orderId
+        }
+      })
+    } catch (error) {
+      console.error('Error creating charge', error)
+      throw new Error('Failed to create charge')
     }
-  } catch (error) {
-    await prisma.order.update({
-      where: {
-        id: newOrder.id
-      },
+
+    const newOrder = await tx.order.create({
       data: {
-        status: OrderStatus.CANCELLED
+        id: orderId,
+        userId: session.user.id,
+        points: zeroDecimalAmount,
+        omiseChargeId: newCharge.id,
+        // If charge is paid then set status to completed, otherwise leave it undefined for default status
+        status: newCharge.paid ? OrderStatus.COMPLETED : undefined
       }
     })
-    throw new Error('Order failed to charge')
+
+    if (newCharge.paid) {
+      await tx.user.update({
+        where: {
+          id: session.user.id
+        },
+        data: {
+          points: {
+            increment: zeroDecimalAmount
+          }
+        }
+      })
+    }
+
+    return [newOrder, newCharge]
+  })
+
+  if (!newOrder) {
+    return {
+      success: false,
+      message: 'Failed to create order'
+    }
   }
+
+  redirect(newCharge.authorize_uri)
 }

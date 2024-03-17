@@ -17,6 +17,7 @@ import {
 } from '@nextui-org/react'
 import { Product } from '@prisma/client'
 import Coin from '@/src/assets/svgs/coin.svg'
+import { currencyUtil } from '@/src/uilts/currency'
 
 type Props = {
   style?: React.CSSProperties
@@ -66,7 +67,7 @@ export default function ProductListItem({
             startContent={<Coin />}
             size="lg"
           >
-            {product.price.toLocaleString('th-TH')}
+            {currencyUtil.format(product.price)}
           </Chip>
           {isPurchasable && (
             <Button color="primary" variant="flat" onPress={onOpen}>
@@ -95,9 +96,7 @@ export default function ProductListItem({
                   <p>
                     You are about to purchase <strong>{product.name}</strong>{' '}
                     for{' '}
-                    <strong>
-                      {product.price.toLocaleString('th-TH')} Points
-                    </strong>
+                    <strong>{currencyUtil.format(product.price)} Points</strong>
                   </p>
                 </ModalBody>
                 <ModalFooter>

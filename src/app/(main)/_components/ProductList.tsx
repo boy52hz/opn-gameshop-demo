@@ -5,7 +5,6 @@ import ProductListItem from './ProductListItem'
 import { purchaseProduct } from '../actions'
 import { toast } from 'react-toastify'
 import ToastError from '@/src/components/ToastError'
-import { useSession } from 'next-auth/react'
 
 type Props = {
   products: Product[]
@@ -13,12 +12,13 @@ type Props = {
 }
 
 export default function ProductList({ products, isPurchasable }: Props) {
-  const { update } = useSession()
   const handlePurchase = (product: Product) => {
     toast.promise(
       async () => {
         const data = await purchaseProduct(product.id)
-        await update({ points: data.remainingPoints })
+        if (!data.success) {
+          throw new Error(data.message)
+        }
         return data
       },
       {

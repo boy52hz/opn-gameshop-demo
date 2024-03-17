@@ -2,6 +2,7 @@
 
 import { auth } from '@/src/libs/auth'
 import { prisma } from '@/src/libs/prisma-client'
+import { revalidatePath } from 'next/cache'
 
 export const purchaseProduct = async (productId: string) => {
   const session = await auth()
@@ -13,7 +14,10 @@ export const purchaseProduct = async (productId: string) => {
   })
 
   if (!user) {
-    throw new Error('User not found')
+    return {
+      success: false,
+      message: 'User not found'
+    }
   }
 
   const product = await prisma.product.findUniqueOrThrow({
@@ -23,15 +27,21 @@ export const purchaseProduct = async (productId: string) => {
   })
 
   if (!product) {
-    throw new Error('Product not found')
+    return {
+      success: false,
+      message: 'Product not found'
+    }
   }
 
   if (user.points < product.price) {
-    throw new Error('Insufficient points')
+    return {
+      success: false,
+      message: 'Insufficient points'
+    }
   }
 
   try {
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: {
         id: user.id
       },
@@ -41,13 +51,15 @@ export const purchaseProduct = async (productId: string) => {
         }
       }
     })
-
+    revalidatePath('/', 'layout')
     return {
       success: true,
-      message: 'Product has been purchased',
-      remainingPoints: updatedUser.points
+      message: 'Product has been purchased'
     }
   } catch (error) {
-    throw new Error('Failed to update user points')
+    return {
+      success: false,
+      message: 'Failed to update user points'
+    }
   }
 }

@@ -11,6 +11,7 @@ import { OrderStatus } from '@prisma/client'
 import moment from 'moment'
 import Coin from '@/src/assets/svgs/coin.svg'
 import { auth } from '@/src/libs/auth'
+import { currencyUtil } from '@/src/uilts/currency'
 
 export default async function TopupHistory() {
   const session = await auth()
@@ -68,7 +69,7 @@ export default async function TopupHistory() {
                 variant="flat"
                 startContent={<Coin />}
               >
-                {order.points.toLocaleString('th-TH')}
+                {currencyUtil.format(order.points)}
               </Chip>
             </div>
           ))
