@@ -13,7 +13,6 @@ export const {
     jwt({ token, trigger, session }) {
       if (trigger === 'update' && session.points) {
         token.points = session.points
-        console.log('Updated token with points', token.points)
       }
       return token
     },

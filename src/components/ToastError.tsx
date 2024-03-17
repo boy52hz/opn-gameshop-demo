@@ -3,7 +3,7 @@
 import React from 'react'
 
 type Props = {
-  message: any
+  message: string
 }
 
 export default function ToastError({ message }: Props) {

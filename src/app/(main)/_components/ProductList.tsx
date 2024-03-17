@@ -22,7 +22,7 @@ export default function ProductList({ products, isPurchasable }: Props) {
         return data
       },
       {
-        pending: 'Purchasing product...',
+        pending: 'Processing...',
         success: {
           render: ({ data }) => data.message
         },

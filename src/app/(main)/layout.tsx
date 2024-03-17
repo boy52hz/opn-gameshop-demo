@@ -20,7 +20,6 @@ export default async function MainLayout({ children }: Props) {
       <div className="flex gap-10">
         <div className="flex-[2] flex flex-col gap-4">
           {session?.user ? <ProfileCard /> : <SignInCard />}
-
           <TopupHistory />
         </div>
         <div className="flex-[5]">{children}</div>
